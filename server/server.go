@@ -2,44 +2,42 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 )
 
-const dataSizeMB = 10 // ダウンロード用データサイズ（MB）
-
-// ヘルスチェックエンドポイント
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "OK")
-}
-
-// ダウンロード用エンドポイント
-func downloadHandler(w http.ResponseWriter, r *http.Request) {
-	data := make([]byte, dataSizeMB*1024*1024) // ダミーデータ
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
-
-// アップロード用エンドポイント
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	uploadedBytes, err := io.Copy(io.Discard, r.Body) // アップロードデータを捨てつつサイズを測定
-	if err != nil {
-		http.Error(w, "Failed to read upload data", http.StatusInternalServerError)
-		return
-	}
-	fmt.Printf("Received %d bytes\n", uploadedBytes)
-	w.WriteHeader(http.StatusOK)
-}
+const dataSizeMB = 10 // ダウンロード用のデータサイズ（MB）
 
 func main() {
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/download", downloadHandler)
-	http.HandleFunc("/upload", uploadHandler)
+	// ダウンロード用エンドポイント
+	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
+		data := make([]byte, dataSizeMB*1024*1024) // ダミーデータ作成
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+		fmt.Printf("Sent %d MB of data to client\n", dataSizeMB)
+	})
 
-	port := ":8080"
-	fmt.Printf("Starting server at %s\n", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
-		fmt.Printf("Server failed: %v\n", err)
+	// アップロード用エンドポイント
+	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		data := make([]byte, r.ContentLength)
+		_, err := r.Body.Read(data)
+		if err != nil {
+			http.Error(w, "Failed to read data", http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Printf("Received %d bytes from client\n", r.ContentLength)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// サーバーの起動
+	fmt.Println("Starting server on port :8080...")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		fmt.Println("Server failed:", err)
 	}
 }
