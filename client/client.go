@@ -14,7 +14,7 @@ const (
 	downloadURL     = "http://localhost:8080/download"
 	uploadURL       = "http://localhost:8080/upload"
 	dataSizeMB      = 10 // データサイズ（MB）
-	numMeasurements = 5  // 測定回数
+	numMeasurements = 50 // 測定回数
 	threads         = 4  // 並列処理のスレッド数
 )
 
