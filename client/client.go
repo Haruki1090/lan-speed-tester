@@ -11,11 +11,14 @@ import (
 )
 
 const (
-	dataSizeMB      = 10
-	numMeasurements = 5
-	threads         = 4
+	downloadURL     = "http://localhost:8080/download"
+	uploadURL       = "http://localhost:8080/upload"
+	dataSizeMB      = 10 // データサイズ（MB）
+	numMeasurements = 5  // 測定回数
+	threads         = 4  // 並列処理のスレッド数
 )
 
+// 並列ダウンロード速度測定
 func parallelDownload(url string, threads int) float64 {
 	var wg sync.WaitGroup
 	start := time.Now()
@@ -36,15 +39,16 @@ func parallelDownload(url string, threads int) float64 {
 
 	wg.Wait()
 	duration := time.Since(start).Seconds()
-	totalData := float64(dataSizeMB*threads) * 8
-	return totalData / (duration * 1024 * 1024)
+	totalData := float64(dataSizeMB*threads) * 8 // データ量（ビット）
+	return totalData / (duration * 1024 * 1024)  // Mbpsで返す
 }
 
+// 並列アップロード速度測定
 func parallelUpload(url string, threads int) float64 {
 	var wg sync.WaitGroup
 	start := time.Now()
 
-	data := bytes.Repeat([]byte("A"), dataSizeMB*1024*1024)
+	data := bytes.Repeat([]byte("A"), dataSizeMB*1024*1024) // アップロード用のダミーデータ
 
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
@@ -61,10 +65,11 @@ func parallelUpload(url string, threads int) float64 {
 
 	wg.Wait()
 	duration := time.Since(start).Seconds()
-	totalData := float64(dataSizeMB*threads) * 8
-	return totalData / (duration * 1024 * 1024)
+	totalData := float64(dataSizeMB*threads) * 8 // データ量（ビット）
+	return totalData / (duration * 1024 * 1024)  // Mbpsで返す
 }
 
+// 測定結果を分析
 func analyzeSpeeds(speeds []float64) (float64, float64) {
 	sort.Float64s(speeds)
 	return calculateAverage(speeds), calculateMedian(speeds)
@@ -86,6 +91,7 @@ func calculateMedian(speeds []float64) float64 {
 	return speeds[mid]
 }
 
+// 視覚的に測定結果を表示
 func displayResults(testType string, speeds []float64, avg, median float64) {
 	fmt.Printf("\n===== %s Speed Test Results =====\n", testType)
 	for i, speed := range speeds {
@@ -97,9 +103,7 @@ func displayResults(testType string, speeds []float64, avg, median float64) {
 }
 
 func main() {
-	downloadURL := "http://localhost:8080/download"
-	uploadURL := "http://localhost:8080/upload"
-
+	// ダウンロード速度測定
 	fmt.Println("Measuring download speed...")
 	downloadSpeeds := make([]float64, numMeasurements)
 	for i := 0; i < numMeasurements; i++ {
@@ -109,6 +113,7 @@ func main() {
 	downloadAvg, downloadMedian := analyzeSpeeds(downloadSpeeds)
 	displayResults("Download", downloadSpeeds, downloadAvg, downloadMedian)
 
+	// アップロード速度測定
 	fmt.Println("\nMeasuring upload speed...")
 	uploadSpeeds := make([]float64, numMeasurements)
 	for i := 0; i < numMeasurements; i++ {
